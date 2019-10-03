@@ -1,0 +1,36 @@
+## Some Basic EDA (step 3)
+
+#Packages
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set()
+
+# Load in Cleaned Data
+df = pd.read_csv('Cleaned_Data')
+df.columns
+# Plot Rents by Neighborhoods
+sns.boxplot(x='neighborhood_fuzzy',y='rent',data=df)
+plt.xlabel('Neighborhood')
+plt.xticks(rotation=90)
+plt.ylabel('Rent')
+plt.title('DC Rent Prices by Neighborhood')
+plt.show()
+
+# Plot Rents by Bedrooms and Square Feet
+sns.scatterplot(x='square_feet',y='rent',data=df,hue='bedrooms')
+plt.xlim(0,3100)
+plt.show()
+
+# Plot Average Rent by Neighborhood
+avg_rent = df.groupby('neighborhood_fuzzy')['rent'].mean()
+avg_rent = avg_rent.sort_values(ascending=True)
+avg_rent = pd.DataFrame(avg_rent).reset_index()
+avg_rent
+
+plot_range = range(1,len(avg_rent.index)+1)
+plt.hlines(y=plot_range,xmin=0, xmax=avg_rent['rent'],alpha=.4)
+plt.scatter(avg_rent['rent'],plot_range,alpha=1)
+plt.yticks(plot_range,avg_rent['neighborhood_fuzzy'])
+plt.show()
