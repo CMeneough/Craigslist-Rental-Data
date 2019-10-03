@@ -1,0 +1,83 @@
+## Clean the Craigslist Data (step 2)
+
+# Packages
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from nltk.tokenize import word_tokenize
+from nltk.tokenize import RegexpTokenizer
+from itertools import chain
+from fuzzywuzzy import process
+from fuzzywuzzy import fuzz
+import nltk
+
+# Read in Data
+data = pd.read_csv('Craigslist_Data')
+data.head()
+
+# Clean Data
+data['rent'] = pd.to_numeric(data['rent'].str[1:])
+data['square_feet'] = pd.to_numeric(data['size'].str[:-3])
+data['bedrooms'] = pd.to_numeric(data['bedrooms'].str[:-2])
+data['date'] = pd.to_datetime(data['date'])
+data['neighborhood'] = data['neighborhood'].astype(str)
+data = data.drop(['size','Unnamed: 0'],axis=1)
+
+# Plot the Numeric Data
+sns.distplot(data['square_feet'].dropna())
+plt.show()
+
+data['bedrooms'].value_counts().plot(kind='bar')
+plt.show()
+
+sns.distplot(data['rent'].dropna())
+plt.show()
+
+# Seems to be outliers in the rent data column
+data['rent'].nlargest(20)
+data['rent'].nsmallest(20)
+
+# Drop rent under $10/month and over $20,000/month
+data = data[(data['rent']>10) & (data['rent']<20000)]
+
+sns.distplot(data['rent'].dropna())
+plt.show()
+
+# Check Frequency of Neighborhoods
+data['neighborhood'].value_counts() # The neighborhood tags are a mess
+
+# Use NLP to Look at Neighborhood Word Frequency
+data['word_tokenize_neighborhood'] = data['neighborhood'].apply(word_tokenize)
+
+# Remove the Punctuation while Tokenizing
+tokenizer = RegexpTokenizer(r'\w+')
+data['tokenize_neighborhood'] = data['neighborhood'].apply(tokenizer.tokenize)
+
+# Plot Neighborhood Word Frequency
+words = data['tokenize_neighborhood'].values.tolist()
+words = list(chain(*words))
+
+freq = nltk.FreqDist(words)
+freq.plot(30)
+
+# Use fuzzywuzzy to match descriptions to Neighborhoods
+# Drop "Washington" since all data is from DC and Im interested in the specific regions of the City
+data['neighborhood_new'] = data['neighborhood'].str.lower()
+data['neighborhood_new'] = data['neighborhood_new'].str.replace('Washington','')
+data['neighborhood_new'] = data['neighborhood_new'].str.replace('D C','')
+data['neighborhood_new'] = data['neighborhood_new'].str.replace('DC','')
+data['neighborhood_new'] = data['neighborhood_new'].str.replace('Dc','')
+data['neighborhood_new'] = data['neighborhood_new'].str.replace('D.C.','')
+data['neighborhood_new'] = data['neighborhood_new'].replace('',np.NaN)
+
+choices = ['Adams Morgan','Georgetown','Capitol Hill','Foggy Bottom','Logan Circle','Columbia Heights','Shaw','Woodley Park','Cleveland Park','Navy Yard','U Street','H Street','Chinatown','Arlington','Crystal City','Clarendon','DuPont Circle','Van Ness','Connecticut','']
+choices = [area.lower() for area in choices]
+
+data['neighborhood_fuzzy'] = data['neighborhood_new'].apply(lambda x: process.extractOne(x,choices,scorer=fuzz.token_set_ratio))
+
+data['neighborhood_fuzzy'] = data['neighborhood_fuzzy'].astype(str)
+data['neighborhood_fuzzy'], data['score_fuzzy'] = data['neighborhood_fuzzy'].str.split(',',1).str
+
+
+data['neighborhood_fuzzy'].value_counts()
