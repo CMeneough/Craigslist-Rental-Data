@@ -1,5 +1,5 @@
 # Craigslist-Rental-Data
-Scrapped rental data from craigslist the used basic NLP to standardize the fuzzy neighborhood information
+Program to web scrape rental data from craigslist the used basic NLP to standardize the fuzzy neighborhood information
 
 My first attempt at web scrapping and NLP. I scrapped rental data for the DC area from craigslist then used the NLP to help organize the neighboorhood information. There were over 400 unique neighboorhood descriptions, many of them seemingly the same (ex. Georgetown, Georgetow, geogeton, ...). I used the fuzzywuzzy package to then categorize these unique descriptors into their correct neighborhood name. 
 
